@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2022-02-25
+*/
+
 // SPDX-License-Identifier: Unlicensed
 
 pragma solidity 0.8.9;
@@ -422,7 +426,7 @@ contract ArhcieNeko is Context, IERC20, Ownable {
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
 
-    string private _name = "Archieneko";
+    string private _name = "Archie Neko";
     string private _symbol = "ARCHIE";
     uint8 private _decimals = 18;
    
@@ -457,10 +461,16 @@ contract ArhcieNeko is Context, IERC20, Ownable {
     address public uniswapV2Pair;
     IERC20 public WETH;
 
-    address public _owenerAddress = 0x6258A7C23BF42b80293A8e02d1A0A07A69b242E1;
+    // address public _ownerAddress = 0x0f7B55e157f91528f1eE480727785F68ffDF8627;
+    // address public _marketingAddress = 0xa6832d7e1d1f2D23eFFE816819f16917e9C146A5;
+    // address public _treasuryAddress = 0xeF07A2Cd176001DD1F976efBF0D7F00A39B9D3cA;
+    // address public _foundationAddress = 0x13498081b989F9351FEad7802164Ae374bc7300f;
+
+    address public _ownerAddress = 0x088B1fb7919Fe8E25377590AC759d4cD73378400;
     address public _marketingAddress = 0xc13A1daE516C865F8D4A0Af3F16208BC2FB14135;
     address public _treasuryAddress = 0x5aFf1Cb3ea55e81357b93B8DBbEC9f6faf7b7296;
-    address public _foundationAddress = 0x749b0077AaCaD5A27D03eF314cf2F5C8F36711d4;
+    address public _foundationAddress = 0x13Da4c8f1eaF70a9c9619c46E7072d9f64E9492c;
+
     address public constant _deadAdderess = address(0xdead);
 
     uint256 private numTokensSellToAddToLiquidity = _tTotal / 500;
@@ -505,16 +515,17 @@ contract ArhcieNeko is Context, IERC20, Ownable {
     }
     
     constructor () public {
-        _rOwned[_owenerAddress] = _rTotal;
+        _rOwned[_ownerAddress] = _rTotal;
         
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3);
 
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
         uniswapV2Router = _uniswapV2Router;
         WETH = IERC20(_uniswapV2Router.WETH());
 
-        _isExcludedFromFee[_owenerAddress] = true;
+        _isExcludedFromFee[_ownerAddress] = true;
         _isExcludedFromFee[address(this)] = true;
 
         _isExcluded[_deadAdderess] = true;

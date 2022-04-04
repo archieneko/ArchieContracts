@@ -1,3 +1,9 @@
+/**
+ *Submitted for verification at BscScan.com on 2021-07-02
+*/
+
+// File: @openzeppelin/contracts/utils/Context.sol
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
@@ -22,6 +28,10 @@ abstract contract Context {
         return msg.data;
     }
 }
+
+// File: @openzeppelin/contracts/access/Ownable.sol
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -87,6 +97,10 @@ abstract contract Ownable is Context {
     }
 }
 
+// File: @openzeppelin/contracts/security/ReentrancyGuard.sol
+
+pragma solidity ^0.8.0;
+
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
  *
@@ -145,6 +159,10 @@ abstract contract ReentrancyGuard {
         _status = _NOT_ENTERED;
     }
 }
+
+// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -223,6 +241,10 @@ interface IERC20 {
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
+
+// File: @openzeppelin/contracts/utils/Address.sol
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Collection of functions related to the address type
@@ -437,6 +459,10 @@ library Address {
     }
 }
 
+// File: @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
+
+pragma solidity ^0.8.0;
+
 /**
  * @title SafeERC20
  * @dev Wrappers around ERC20 operations that throw on failure (when the token
@@ -531,6 +557,10 @@ library SafeERC20 {
     }
 }
 
+// File: contracts/interfaces/IRandomNumberGenerator.sol
+
+pragma solidity ^0.8.4;
+
 interface IRandomNumberGenerator {
     /**
      * Requests randomness from a user-provided seed
@@ -548,7 +578,11 @@ interface IRandomNumberGenerator {
     function viewRandomResult() external view returns (uint32);
 }
 
-interface IArchieInuLottery {
+// File: contracts/interfaces/IPancakeSwapLottery.sol
+
+pragma solidity ^0.8.4;
+
+interface IPancakeSwapLottery {
     /**
      * @notice Buy tickets for the current lottery
      * @param _lotteryId: lotteryId
@@ -578,7 +612,7 @@ interface IArchieInuLottery {
     function closeLottery(uint256 _lotteryId) external;
 
     /**
-     * @notice Draw the final number, calculate reward in ARCHIE per group, and make lottery claimable
+     * @notice Draw the final number, calculate reward in CAKE per group, and make lottery claimable
      * @param _lotteryId: lottery id
      * @param _autoInjection: reinjects funds into next lottery (vs. withdrawing all)
      * @dev Callable by operator
@@ -588,7 +622,7 @@ interface IArchieInuLottery {
     /**
      * @notice Inject funds
      * @param _lotteryId: lottery id
-     * @param _amount: amount to inject in ARCHIE token
+     * @param _amount: amount to inject in CAKE token
      * @dev Callable by operator
      */
     function injectFunds(uint256 _lotteryId, uint256 _amount) external;
@@ -597,14 +631,14 @@ interface IArchieInuLottery {
      * @notice Start the lottery
      * @dev Callable by operator
      * @param _endTime: endTime of the lottery
-     * @param _priceTicketInArchie: price of a ticket in ARCHIE
+     * @param _priceTicketInCake: price of a ticket in CAKE
      * @param _discountDivisor: the divisor to calculate the discount magnitude for bulks
      * @param _rewardsBreakdown: breakdown of rewards per bracket (must sum to 10,000)
      * @param _treasuryFee: treasury fee (10,000 = 100%, 100 = 1%)
      */
     function startLottery(
         uint256 _endTime,
-        uint256 _priceTicketInArchie,
+        uint256 _priceTicketInCake,
         uint256 _discountDivisor,
         uint256[6] calldata _rewardsBreakdown,
         uint256 _treasuryFee
@@ -616,9 +650,16 @@ interface IArchieInuLottery {
     function viewCurrentLotteryId() external returns (uint256);
 }
 
+// File: contracts/PancakeSwapLottery.sol
+
+pragma solidity ^0.8.4;
 pragma abicoder v2;
 
-contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
+/** @title PancakeSwap Lottery.
+ * @notice It is a contract for a lottery system using
+ * randomness provided externally.
+ */
+contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
     using SafeERC20 for IERC20;
 
     address public injectorAddress;
@@ -630,8 +671,8 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
 
     uint256 public maxNumberTicketsPerBuyOrClaim = 100;
 
-    uint256 public maxPriceTicketInArchie = 50 ether;
-    uint256 public minPriceTicketInArchie = 0.005 ether;
+    uint256 public maxPriceTicketInCake = 50 ether;
+    uint256 public minPriceTicketInCake = 0.005 ether;
 
     uint256 public pendingInjectionNextLottery;
 
@@ -640,7 +681,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     uint256 public constant MAX_LENGTH_LOTTERY = 4 days + 5 minutes; // 4 days
     uint256 public constant MAX_TREASURY_FEE = 3000; // 30%
 
-    IERC20 public archieToken;
+    IERC20 public cakeToken;
     IRandomNumberGenerator public randomGenerator;
 
     enum Status {
@@ -654,15 +695,15 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
         Status status;
         uint256 startTime;
         uint256 endTime;
-        uint256 priceTicketInArchie;
+        uint256 priceTicketInCake;
         uint256 discountDivisor;
         uint256[6] rewardsBreakdown; // 0: 1 matching number // 5: 6 matching numbers
         uint256 treasuryFee; // 500: 5% // 200: 2% // 50: 0.5%
-        uint256[6] ArchiePerBracket;
+        uint256[6] cakePerBracket;
         uint256[6] countWinnersPerBracket;
         uint256 firstTicketId;
         uint256 firstTicketIdNextLottery;
-        uint256 amountCollectedInArchie;
+        uint256 amountCollectedInCake;
         uint32 finalNumber;
     }
 
@@ -707,7 +748,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
         uint256 indexed lotteryId,
         uint256 startTime,
         uint256 endTime,
-        uint256 priceTicketInArchie,
+        uint256 priceTicketInCake,
         uint256 firstTicketId,
         uint256 injectedAmount
     );
@@ -720,11 +761,11 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     /**
      * @notice Constructor
      * @dev RandomNumberGenerator must be deployed prior to this contract
-     * @param _archieTokenAddress: address of the Archie token
+     * @param _cakeTokenAddress: address of the CAKE token
      * @param _randomGeneratorAddress: address of the RandomGenerator contract used to work with ChainLink VRF
      */
-    constructor(address _archieTokenAddress, address _randomGeneratorAddress) {
-        archieToken = IERC20(_archieTokenAddress);
+    constructor(address _cakeTokenAddress, address _randomGeneratorAddress) {
+        cakeToken = IERC20(_cakeTokenAddress);
         randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
 
         // Initializes a mapping
@@ -754,18 +795,18 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
         require(_lotteries[_lotteryId].status == Status.Open, "Lottery is not open");
         require(block.timestamp < _lotteries[_lotteryId].endTime, "Lottery is over");
 
-        // Calculate number of Archie to this contract
-        uint256 amountArchieToTransfer = _calculateTotalPriceForBulkTickets(
+        // Calculate number of CAKE to this contract
+        uint256 amountCakeToTransfer = _calculateTotalPriceForBulkTickets(
             _lotteries[_lotteryId].discountDivisor,
-            _lotteries[_lotteryId].priceTicketInArchie,
+            _lotteries[_lotteryId].priceTicketInCake,
             _ticketNumbers.length
         );
 
-        // Transfer archie tokens to this contract
-        archieToken.safeTransferFrom(address(msg.sender), address(this), amountArchieToTransfer);
+        // Transfer cake tokens to this contract
+        cakeToken.safeTransferFrom(address(msg.sender), address(this), amountCakeToTransfer);
 
         // Increment the total amount collected for the lottery round
-        _lotteries[_lotteryId].amountCollectedInArchie += amountArchieToTransfer;
+        _lotteries[_lotteryId].amountCollectedInCake += amountCakeToTransfer;
 
         for (uint256 i = 0; i < _ticketNumbers.length; i++) {
             uint32 thisTicketNumber = _ticketNumbers[i];
@@ -807,8 +848,8 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
         require(_ticketIds.length <= maxNumberTicketsPerBuyOrClaim, "Too many tickets");
         require(_lotteries[_lotteryId].status == Status.Claimable, "Lottery not claimable");
 
-        // Initializes the rewardInArchieToTransfer
-        uint256 rewardInArchieToTransfer;
+        // Initializes the rewardInCakeToTransfer
+        uint256 rewardInCakeToTransfer;
 
         for (uint256 i = 0; i < _ticketIds.length; i++) {
             require(_brackets[i] < 6, "Bracket out of range"); // Must be between 0 and 5
@@ -835,13 +876,13 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
             }
 
             // Increment the reward to transfer
-            rewardInArchieToTransfer += rewardForTicketId;
+            rewardInCakeToTransfer += rewardForTicketId;
         }
 
         // Transfer money to msg.sender
-        archieToken.safeTransfer(msg.sender, rewardInArchieToTransfer);
+        cakeToken.safeTransfer(msg.sender, rewardInCakeToTransfer);
 
-        emit TicketsClaim(msg.sender, rewardInArchieToTransfer, _lotteryId, _ticketIds.length);
+        emit TicketsClaim(msg.sender, rewardInCakeToTransfer, _lotteryId, _ticketIds.length);
     }
 
     /**
@@ -863,7 +904,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     }
 
     /**
-     * @notice Draw the final number, calculate reward in ARCHIE per group, and make lottery claimable
+     * @notice Draw the final number, calculate reward in CAKE per group, and make lottery claimable
      * @param _lotteryId: lottery id
      * @param _autoInjection: reinjects funds into next lottery (vs. withdrawing all)
      * @dev Callable by operator
@@ -885,13 +926,13 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
 
         // Calculate the amount to share post-treasury fee
         uint256 amountToShareToWinners = (
-            ((_lotteries[_lotteryId].amountCollectedInArchie) * (10000 - _lotteries[_lotteryId].treasuryFee))
+            ((_lotteries[_lotteryId].amountCollectedInCake) * (10000 - _lotteries[_lotteryId].treasuryFee))
         ) / 10000;
 
         // Initializes the amount to withdraw to treasury
         uint256 amountToWithdrawToTreasury;
 
-        // Calculate prizes in Archie for each bracket by starting from the highest one
+        // Calculate prizes in CAKE for each bracket by starting from the highest one
         for (uint32 i = 0; i < 6; i++) {
             uint32 j = 5 - i;
             uint32 transformedWinningNumber = _bracketCalculator[j] + (finalNumber % (uint32(10)**(j + 1)));
@@ -907,7 +948,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
             ) {
                 // B. If rewards at this bracket are > 0, calculate, else, report the numberAddresses from previous bracket
                 if (_lotteries[_lotteryId].rewardsBreakdown[j] != 0) {
-                    _lotteries[_lotteryId].archiePerBracket[j] =
+                    _lotteries[_lotteryId].cakePerBracket[j] =
                         ((_lotteries[_lotteryId].rewardsBreakdown[j] * amountToShareToWinners) /
                             (_numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber] -
                                 numberAddressesInPreviousBracket)) /
@@ -916,9 +957,9 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
                     // Update numberAddressesInPreviousBracket
                     numberAddressesInPreviousBracket = _numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber];
                 }
-                // A. No ARCHIE to distribute, they are added to the amount to withdraw to treasury address
+                // A. No CAKE to distribute, they are added to the amount to withdraw to treasury address
             } else {
-                _lotteries[_lotteryId].archiePerBracket[j] = 0;
+                _lotteries[_lotteryId].cakePerBracket[j] = 0;
 
                 amountToWithdrawToTreasury +=
                     (_lotteries[_lotteryId].rewardsBreakdown[j] * amountToShareToWinners) /
@@ -935,10 +976,10 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
             amountToWithdrawToTreasury = 0;
         }
 
-        amountToWithdrawToTreasury += (_lotteries[_lotteryId].amountCollectedInArchie - amountToShareToWinners);
+        amountToWithdrawToTreasury += (_lotteries[_lotteryId].amountCollectedInCake - amountToShareToWinners);
 
-        // Transfer Archie to treasury address
-        archieToken.safeTransfer(treasuryAddress, amountToWithdrawToTreasury);
+        // Transfer CAKE to treasury address
+        cakeToken.safeTransfer(treasuryAddress, amountToWithdrawToTreasury);
 
         emit LotteryNumberDrawn(currentLotteryId, finalNumber, numberAddressesInPreviousBracket);
     }
@@ -969,14 +1010,14 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     /**
      * @notice Inject funds
      * @param _lotteryId: lottery id
-     * @param _amount: amount to inject in ARCHIE token
+     * @param _amount: amount to inject in CAKE token
      * @dev Callable by owner or injector address
      */
     function injectFunds(uint256 _lotteryId, uint256 _amount) external override onlyOwnerOrInjector {
         require(_lotteries[_lotteryId].status == Status.Open, "Lottery not open");
 
-        archieToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-        _lotteries[_lotteryId].amountCollectedInArchie += _amount;
+        cakeToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+        _lotteries[_lotteryId].amountCollectedInCake += _amount;
 
         emit LotteryInjection(_lotteryId, _amount);
     }
@@ -985,14 +1026,14 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
      * @notice Start the lottery
      * @dev Callable by operator
      * @param _endTime: endTime of the lottery
-     * @param _priceTicketInArchie: price of a ticket in ARCHIE
+     * @param _priceTicketInCake: price of a ticket in CAKE
      * @param _discountDivisor: the divisor to calculate the discount magnitude for bulks
      * @param _rewardsBreakdown: breakdown of rewards per bracket (must sum to 10,000)
      * @param _treasuryFee: treasury fee (10,000 = 100%, 100 = 1%)
      */
     function startLottery(
         uint256 _endTime,
-        uint256 _priceTicketInArchie,
+        uint256 _priceTicketInCake,
         uint256 _discountDivisor,
         uint256[6] calldata _rewardsBreakdown,
         uint256 _treasuryFee
@@ -1008,7 +1049,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
         );
 
         require(
-            (_priceTicketInArchie >= minPriceTicketInArchie) && (_priceTicketInArchie <= maxPriceTicketInArchie),
+            (_priceTicketInCake >= minPriceTicketInCake) && (_priceTicketInCake <= maxPriceTicketInCake),
             "Outside of limits"
         );
 
@@ -1031,15 +1072,15 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
             status: Status.Open,
             startTime: block.timestamp,
             endTime: _endTime,
-            priceTicketInArchie: _priceTicketInArchie,
+            priceTicketInCake: _priceTicketInCake,
             discountDivisor: _discountDivisor,
             rewardsBreakdown: _rewardsBreakdown,
             treasuryFee: _treasuryFee,
-            ArchiePerBracket: [uint256(0), uint256(0), uint256(0), uint256(0), uint256(0), uint256(0)],
+            cakePerBracket: [uint256(0), uint256(0), uint256(0), uint256(0), uint256(0), uint256(0)],
             countWinnersPerBracket: [uint256(0), uint256(0), uint256(0), uint256(0), uint256(0), uint256(0)],
             firstTicketId: currentTicketId,
             firstTicketIdNextLottery: currentTicketId,
-            amountCollectedInArchie: pendingInjectionNextLottery,
+            amountCollectedInCake: pendingInjectionNextLottery,
             finalNumber: 0
         });
 
@@ -1047,7 +1088,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
             currentLotteryId,
             block.timestamp,
             _endTime,
-            _priceTicketInArchie,
+            _priceTicketInCake,
             currentTicketId,
             pendingInjectionNextLottery
         );
@@ -1062,7 +1103,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
      * @dev Only callable by owner.
      */
     function recoverWrongTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
-        require(_tokenAddress != address(ArchieToken), "Cannot be Archie token");
+        require(_tokenAddress != address(cakeToken), "Cannot be CAKE token");
 
         IERC20(_tokenAddress).safeTransfer(address(msg.sender), _tokenAmount);
 
@@ -1070,19 +1111,19 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     }
 
     /**
-     * @notice Set ARCHIE price ticket upper/lower limit
+     * @notice Set CAKE price ticket upper/lower limit
      * @dev Only callable by owner
-     * @param _minPriceTicketInArchie: minimum price of a ticket in ARCHIE
-     * @param _maxPriceTicketInArchie: maximum price of a ticket in ARCHIE
+     * @param _minPriceTicketInCake: minimum price of a ticket in CAKE
+     * @param _maxPriceTicketInCake: maximum price of a ticket in CAKE
      */
-    function setMinAndMaxTicketPriceInArchie(uint256 _minPriceTicketInArchie, uint256 _maxPriceTicketInArchie)
+    function setMinAndMaxTicketPriceInCake(uint256 _minPriceTicketInCake, uint256 _maxPriceTicketInCake)
         external
         onlyOwner
     {
-        require(_minPriceTicketInArchie <= _maxPriceTicketInArchie, "minPrice must be < maxPrice");
+        require(_minPriceTicketInCake <= _maxPriceTicketInCake, "minPrice must be < maxPrice");
 
-        minPriceTicketInArchie = _minPriceTicketInArchie;
-        maxPriceTicketInArchie = _maxPriceTicketInArchie;
+        minPriceTicketInCake = _minPriceTicketInCake;
+        maxPriceTicketInCake = _maxPriceTicketInCake;
     }
 
     /**
@@ -1120,7 +1161,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
     /**
      * @notice Calculate price of a set of tickets
      * @param _discountDivisor: divisor for the discount
-     * @param _priceTicket price of a ticket (in ARCHIE)
+     * @param _priceTicket price of a ticket (in CAKE)
      * @param _numberTickets number of tickets to buy
      */
     function calculateTotalPriceForBulkTickets(
@@ -1276,7 +1317,7 @@ contract ArchieInuLottery is ReentrancyGuard, IArchieInuLottery, Ownable {
 
         // Confirm that the two transformed numbers are the same, if not throw
         if (transformedWinningNumber == transformedUserNumber) {
-            return _lotteries[_lotteryId].ArchiePerBracket[_bracket];
+            return _lotteries[_lotteryId].cakePerBracket[_bracket];
         } else {
             return 0;
         }
