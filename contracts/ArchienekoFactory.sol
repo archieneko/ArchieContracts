@@ -426,7 +426,7 @@ contract ArchiePair is IArchiePair, ArchieERC20 {
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));
         uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));
-        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');
+        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Archie: K');
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);
@@ -467,10 +467,10 @@ contract ArchieFactory is IArchieFactory {
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        require(tokenA != tokenB, 'Pancake: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'Archie: IDENTICAL_ADDRESSES');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'Pancake: ZERO_ADDRESS');
-        require(getPair[token0][token1] == address(0), 'Pancake: PAIR_EXISTS'); // single check is sufficient
+        require(token0 != address(0), 'Archie: ZERO_ADDRESS');
+        require(getPair[token0][token1] == address(0), 'Archie: PAIR_EXISTS'); // single check is sufficient
         bytes memory bytecode = type(ArchiePair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
@@ -484,12 +484,12 @@ contract ArchieFactory is IArchieFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'Pancake: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'Archie: FORBIDDEN');
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, 'Pancake: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'Archie: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-// File: @uniswap\lib\contracts\libraries\TransferHelper.sol
 
-pragma solidity >=0.6.2;
+pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
@@ -28,6 +27,8 @@ library TransferHelper {
         require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
     }
 }
+
+pragma solidity >=0.6.2;
 
 interface IArchieRouter01 {
     function factory() external pure returns (address);
@@ -123,6 +124,8 @@ interface IArchieRouter01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
+pragma solidity >=0.6.2;
+
 interface IArchieRouter02 is IArchieRouter01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
@@ -164,6 +167,8 @@ interface IArchieRouter02 is IArchieRouter01 {
     ) external;
 }
 
+pragma solidity >=0.5.0;
+
 interface IArchieFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
@@ -182,6 +187,7 @@ interface IArchieFactory {
     function INIT_CODE_PAIR_HASH() external view returns (bytes32);
 }
 
+pragma solidity =0.6.6;
 
 library SafeMath {
     function add(uint x, uint y) internal pure returns (uint z) {
@@ -196,6 +202,8 @@ library SafeMath {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
     }
 }
+
+pragma solidity >=0.5.0;
 
 interface IArchiePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -247,6 +255,8 @@ interface IArchiePair {
 
     function initialize(address, address) external;
 }
+
+pragma solidity >=0.5.0;
 
 library ArchieLibrary {
     using SafeMath for uint;
@@ -326,6 +336,8 @@ library ArchieLibrary {
     }
 }
 
+pragma solidity >=0.5.0;
+
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -342,11 +354,15 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
+pragma solidity >=0.5.0;
+
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
+
+pragma solidity =0.6.6;
 
 contract ArchieRouter is IArchieRouter02 {
     using SafeMath for uint;
@@ -390,7 +406,7 @@ contract ArchieRouter is IArchieRouter02 {
                 require(amountBOptimal >= amountBMin, 'ArchieRouter: INSUFFICIENT_B_AMOUNT');
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
-                uint amountAOptimal = ArchieLibarary.quote(amountBDesired, reserveB, reserveA);
+                uint amountAOptimal = ArchieLibrary.quote(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
                 require(amountAOptimal >= amountAMin, 'ArchieRouter: INSUFFICIENT_A_AMOUNT');
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
@@ -429,7 +445,7 @@ contract ArchieRouter is IArchieRouter02 {
             amountTokenMin,
             amountETHMin
         );
-        address pair = ArchieLibarary.pairFor(factory, token, WETH);
+        address pair = ArchieLibrary.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
