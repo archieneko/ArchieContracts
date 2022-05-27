@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity =0.5.16;
-
+pragma solidity >=0.5.0;
 
 interface IArchieFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -18,6 +16,8 @@ interface IArchieFactory {
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
 }
+
+pragma solidity >=0.5.0;
 
 interface IArchiePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -42,7 +42,7 @@ interface IArchiePair {
 
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
-    event Swap(
+    event Archie(
         address indexed sender,
         uint amount0In,
         uint amount1In,
@@ -70,6 +70,8 @@ interface IArchiePair {
     function initialize(address, address) external;
 }
 
+pragma solidity >=0.5.0;
+
 interface IArchieERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -92,7 +94,10 @@ interface IArchieERC20 {
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
+pragma solidity =0.5.16;
+
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
+
 library SafeMath {
     function add(uint x, uint y) internal pure returns (uint z) {
         require((z = x + y) >= x, 'ds-math-add-overflow');
@@ -107,11 +112,13 @@ library SafeMath {
     }
 }
 
+pragma solidity =0.5.16;
+
 contract ArchieERC20 is IArchieERC20 {
     using SafeMath for uint;
 
-    string public constant name = 'Archie LPs';
-    string public constant symbol = 'Archie-LP';
+    string public constant name = 'Archie-LP-Token';
+    string public constant symbol = 'ARCHIE-LP';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
@@ -197,7 +204,10 @@ contract ArchieERC20 is IArchieERC20 {
     }
 }
 
+pragma solidity =0.5.16;
+
 // a library for performing various math operations
+
 library Math {
     function min(uint x, uint y) internal pure returns (uint z) {
         z = x < y ? x : y;
@@ -218,9 +228,13 @@ library Math {
     }
 }
 
+pragma solidity =0.5.16;
+
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
+
 // range: [0, 2**112 - 1]
 // resolution: 1 / 2**112
+
 library UQ112x112 {
     uint224 constant Q112 = 2**112;
 
@@ -234,6 +248,8 @@ library UQ112x112 {
         z = x / uint224(y);
     }
 }
+
+pragma solidity >=0.5.0;
 
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -251,9 +267,13 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
+pragma solidity >=0.5.0;
+
 interface IArchieCallee {
     function archieCall(address sender, uint amount0, uint amount1, bytes calldata data) external;
 }
+
+pragma solidity =0.5.16;
 
 contract ArchiePair is IArchiePair, ArchieERC20 {
     using SafeMath  for uint;
@@ -332,7 +352,7 @@ contract ArchiePair is IArchiePair, ArchieERC20 {
         emit Sync(reserve0, reserve1);
     }
 
-    // if fee is on, mint liquidity equivalent to 8/25 of the growth in sqrt(k)
+    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IArchieFactory(factory).feeTo();
         feeOn = feeTo != address(0);
@@ -342,8 +362,8 @@ contract ArchiePair is IArchiePair, ArchieERC20 {
                 uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));
                 uint rootKLast = Math.sqrt(_kLast);
                 if (rootK > rootKLast) {
-                    uint numerator = totalSupply.mul(rootK.sub(rootKLast)).mul(8);
-                    uint denominator = rootK.mul(17).add(rootKLast.mul(8));
+                    uint numerator = totalSupply.mul(rootK.sub(rootKLast));
+                    uint denominator = rootK.mul(5).add(rootKLast);
                     uint liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }
@@ -424,9 +444,9 @@ contract ArchiePair is IArchiePair, ArchieERC20 {
         uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
         require(amount0In > 0 || amount1In > 0, 'Archie: INSUFFICIENT_INPUT_AMOUNT');
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-        uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));
-        uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));
-        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Archie: K');
+        uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
+        uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
+        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'Archie: K');
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);
@@ -447,11 +467,12 @@ contract ArchiePair is IArchiePair, ArchieERC20 {
     }
 }
 
-contract ArchieFactory is IArchieFactory {
-    bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(ArchiePair).creationCode));
+pragma solidity =0.5.16;
 
+contract ArchieFactory is IArchieFactory {
     address public feeTo;
     address public feeToSetter;
+    bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(ArchiePair).creationCode));
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -493,3 +514,4 @@ contract ArchieFactory is IArchieFactory {
         feeToSetter = _feeToSetter;
     }
 }
+

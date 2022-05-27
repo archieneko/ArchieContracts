@@ -4,27 +4,49 @@ pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
-    function safeApprove(address token, address to, uint value) internal {
+    function safeApprove(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
         // bytes4(keccak256(bytes('approve(address,uint256)')));
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            'TransferHelper::safeApprove: approve failed'
+        );
     }
 
-    function safeTransfer(address token, address to, uint value) internal {
+    function safeTransfer(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
         // bytes4(keccak256(bytes('transfer(address,uint256)')));
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            'TransferHelper::safeTransfer: transfer failed'
+        );
     }
 
-    function safeTransferFrom(address token, address from, address to, uint value) internal {
+    function safeTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            'TransferHelper::transferFrom: transferFrom failed'
+        );
     }
 
-    function safeTransferETH(address to, uint value) internal {
-        (bool success,) = to.call{value:value}(new bytes(0));
-        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+    function safeTransferETH(address to, uint256 value) internal {
+        (bool success, ) = to.call{value: value}(new bytes(0));
+        require(success, 'TransferHelper::safeTransferETH: ETH transfer failed');
     }
 }
 
@@ -183,11 +205,11 @@ interface IArchieFactory {
 
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
-
-    function INIT_CODE_PAIR_HASH() external view returns (bytes32);
 }
 
 pragma solidity =0.6.6;
+
+// a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
     function add(uint x, uint y) internal pure returns (uint z) {
@@ -275,15 +297,14 @@ library ArchieLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5' // init code hash
+                hex'af88dd15a55596feb9d67243c727bfd6144af12453963809bc91f0cfcf8241bc' // init code hash
             ))));
     }
 
     // fetches and sorts the reserves for a pair
     function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        pairFor(factory, tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IArchiePair(pairFor(factory, tokenA, tokenB)).getReserves();
+        (uint reserve0, uint reserve1,) = IUniArchieV2Pair(pairFor(factory, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -298,9 +319,9 @@ library ArchieLibrary {
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         require(amountIn > 0, 'ArchieLibrary: INSUFFICIENT_INPUT_AMOUNT');
         require(reserveIn > 0 && reserveOut > 0, 'ArchieLibrary: INSUFFICIENT_LIQUIDITY');
-        uint amountInWithFee = amountIn.mul(9975);
+        uint amountInWithFee = amountIn.mul(997);
         uint numerator = amountInWithFee.mul(reserveOut);
-        uint denominator = reserveIn.mul(10000).add(amountInWithFee);
+        uint denominator = reserveIn.mul(1000).add(amountInWithFee);
         amountOut = numerator / denominator;
     }
 
@@ -308,8 +329,8 @@ library ArchieLibrary {
     function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) internal pure returns (uint amountIn) {
         require(amountOut > 0, 'ArchieLibrary: INSUFFICIENT_OUTPUT_AMOUNT');
         require(reserveIn > 0 && reserveOut > 0, 'ArchieLibrary: INSUFFICIENT_LIQUIDITY');
-        uint numerator = reserveIn.mul(amountOut).mul(10000);
-        uint denominator = reserveOut.sub(amountOut).mul(9975);
+        uint numerator = reserveIn.mul(amountOut).mul(1000);
+        uint denominator = reserveOut.sub(amountOut).mul(997);
         amountIn = (numerator / denominator).add(1);
     }
 
@@ -799,3 +820,4 @@ contract ArchieRouter is IArchieRouter02 {
         return ArchieLibrary.getAmountsIn(factory, amountOut, path);
     }
 }
+
