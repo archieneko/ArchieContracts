@@ -695,7 +695,7 @@ contract ERC721A is
     uint128 numberMinted;
   }
 
-  uint256 private currentIndex = 0;
+  uint256 private currentIndex = 1;
 
   uint256 internal immutable collectionSize;
   uint256 internal immutable maxBatchSize;
@@ -1212,50 +1212,52 @@ contract ERC721A is
 
 /// @title ArchienekoNFT
 /// @notice A contract for pixelnauts in the starlink ecosystem
-contract ArchienekoNFT is Ownable, ERC721A, ReentrancyGuard {
-    using   SafeMath for uint256;
+contract ArchieNFT is Ownable, ERC721A, ReentrancyGuard {
     using   Strings for uint256;
 
     uint256 cost = 0.1 ether;
     uint256 public maxSupply = 25000;
-    uint256 public maxMintSupply = 24998;
     mapping(address => bool) public privateSaleList;
     mapping(address => uint256) public mintedAmountonPrivateSale;
     uint256 public mintStartTime;
     uint256 public privateSaleAmount = 10;
-
-    constructor (string memory _pendingURI, uint256 _mintStartTime) ERC721A("ArchieNFT", "ARCHIENFT", maxSupply, maxMintSupply) {
+    string private _baseTokenURI;
+    bool public onPublicSale = false;
+    constructor (string memory _pendingURI, uint256 _mintStartTime) ERC721A("ArchieNFT", "ARCHIENFT", maxSupply, maxSupply) {
         _baseTokenURI = _pendingURI;
         mintStartTime = _mintStartTime;
     }
 
-    function mint(address _to, uint256 _mintAmount) external payable {
-        uint256 supply = totalSupply();
-        require(block.timestamp > mintStartTime, "Mint Not started");
-        require(_mintAmount > 0);
-        require(supply.add(_mintAmount) <= maxSupply, "Total supply exceed");
-
-        if (msg.sender != owner() && !privateSaleList[msg.sender]) {
-            require(supply.add(_mintAmount) <= maxMintSupply, "Max mint supply exceed");
-            uint256 totalCost = cost * _mintAmout;
-            _safeMint(msg.sender, quantity);
-            refundIfOver(totalCost);
-        } else if (privateSaleList[msg.sender]) {
-            require(mintedAmountonPrivateSale[msg.sender] + quantity < privateSaleAmount, "PrivateSaleAmount exceed for this wallet");
-            _safeMint(msg.sender, quantity);
-            mintedAmountonPrivateSale[msg.sender] += quantity;
-            if (mintedAmountonPrivateSale[msg.sender] == privateSaleAmount) {
-              privateSaleList[msg.sender] = false;
-            }
-        } else {
-          _safeMint(msg.sender, quantity);
-        }
-
+    modifier callerIsUser() {
+      require(tx.origin == msg.sender, "The caller is another contract");
+      _;
     }
 
-    // internal
+    function mint(uint256 _mintAmount) external payable callerIsUser{
+      uint256 supply = totalSupply();
+      require(block.timestamp > mintStartTime, "Mint Not started");
+      require(_mintAmount > 0);
+      require(supply + _mintAmount <= maxSupply, "Total supply exceed");
+
+      if (msg.sender != owner() && !privateSaleList[msg.sender]) {
+        require(onPublicSale, "PublicSale is not started yet");
+        uint256 totalCost = cost * _mintAmount;
+        _safeMint(msg.sender, _mintAmount);
+        refundIfOver(totalCost);
+      } else if (privateSaleList[msg.sender]) {
+        require(mintedAmountonPrivateSale[msg.sender] + _mintAmount <= privateSaleAmount, "PrivateSaleAmount exceed for this wallet");
+        _safeMint(msg.sender, _mintAmount);
+        mintedAmountonPrivateSale[msg.sender] += _mintAmount;
+        if (mintedAmountonPrivateSale[msg.sender] == privateSaleAmount) {
+          privateSaleList[msg.sender] = false;
+        }
+      } else {
+        _safeMint(msg.sender, _mintAmount);
+      }
+    }
+
     function _baseURI() internal view virtual override returns (string memory) {
-    return _baseTokenURI;
+      return _baseTokenURI;
     }
 
     function refundIfOver(uint256 price) private {
@@ -1274,21 +1276,25 @@ contract ArchienekoNFT is Ownable, ERC721A, ReentrancyGuard {
       require(success, "Transfer failed.");
     }
     
-    function setMintStartTime(uint256 _mintStartTime) public onlyOwner {
+    function setMintStartTime(uint256 _mintStartTime) external onlyOwner {
         mintStartTime = _mintStartTime;
     }
 
-    function setPrivateSaleListForWallets(address[] memory addresses) public onlyOwner {
+    function setPrivateSaleListForWallets(address[] memory addresses) external onlyOwner {
         for (uint256 i = 0; i < addresses.length; i++) {
           privateSaleList[addresses[i]] = true;
         }
     }
 
-    function setPrivateSaleListForOneWallet(address wallet) public onlyOwner {
+    function setPubliscSale() external onlyOwner {
+          onPublicSale = true;
+    } 
+
+    function setPrivateSaleListForOneWallet(address wallet) external onlyOwner {
           privateSaleList[wallet] = true;
     }
 
-    function RemovePrivateSaleList(address wallet) public onlyOwner {
+    function RemovePrivateSaleList(address wallet) external onlyOwner {
           privateSaleList[wallet] = false;
     }
 
@@ -1308,4 +1314,3 @@ contract ArchienekoNFT is Ownable, ERC721A, ReentrancyGuard {
       return ownershipOf(tokenId);
     }    
 }
-
