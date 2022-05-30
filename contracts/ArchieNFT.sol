@@ -1035,7 +1035,7 @@ contract ERC721A is
       updatedIndex++;
     }
 
-    currentIndex = updatedIndex;
+    currentIndex = updatedIndex - 1;
     _afterTokenTransfers(address(0), to, startTokenId, quantity);
   }
 
