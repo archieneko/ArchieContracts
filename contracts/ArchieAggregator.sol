@@ -23,8 +23,6 @@ abstract contract Context {
     }
 }
 
-pragma solidity ^0.7.0;
-
 /**
  * @dev Contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to
@@ -88,8 +86,6 @@ abstract contract Ownable is Context {
         _owner = newOwner;
     }
 }
-
-pragma solidity ^0.7.0;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -164,8 +160,6 @@ interface IERC20 {
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-
-pragma solidity ^0.7.0;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -378,8 +372,6 @@ library SafeMath {
     }
 }
 
-pragma solidity ^0.7.0;
-
 /**
  * @dev Collection of functions related to the address type
  */
@@ -566,10 +558,6 @@ library Address {
     }
 }
 
-pragma solidity ^0.7.0;
-
-
-
 /**
  * @title SafeERC20
  * @dev Wrappers around ERC20 operations that throw on failure (when the token
@@ -638,8 +626,6 @@ library SafeERC20 {
     }
 }
 
-pragma solidity ^0.7.6;
-
 /// @title Base contract with common payable logics
 abstract contract EthReceiver {
     receive() external payable {
@@ -647,8 +633,6 @@ abstract contract EthReceiver {
         require(msg.sender != tx.origin, "ETH deposit rejected");
     }
 }
-
-pragma solidity >=0.6.0 <0.8.0;
 
 /**
  * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
@@ -697,8 +681,6 @@ interface IERC20Permit {
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
-
-pragma solidity ^0.7.6;
 
 /// @title Library that allows to parse unsuccessful arbitrary calls revert reasons.
 /// See https://solidity.readthedocs.io/en/latest/control-structures.html#revert for details.
@@ -769,17 +751,10 @@ library RevertReasonParser {
     }
 }
 
-pragma solidity ^0.7.6;
-
 /// @title Interface for DAI-style permits
 interface IDaiLikePermit {
     function permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) external;
 }
-
-
-pragma solidity ^0.7.6;
-
-
 
 /// @title Base contract with common permit handling logics
 contract Permitable {
@@ -802,13 +777,6 @@ contract Permitable {
         }
     }
 }
-
-
-pragma solidity ^0.7.6;
-
-
-
-
 library UniERC20 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -863,17 +831,11 @@ library UniERC20 {
     }
 }
 
-
-pragma solidity ^0.7.6;
-
 /// @title Interface for making arbitrary calls during swap
 interface IAggregationExecutor {
     /// @notice Make calls on `msgSender` with specified data
     function callBytes(address msgSender, bytes calldata data) external payable;  // 0x2636f7f8
 }
-
-
-pragma solidity >=0.6.0 <0.8.0;
 
 /**
  * @dev https://eips.ethereum.org/EIPS/eip-712[EIP 712] is a standard for hashing and signing of typed structured data.
@@ -979,9 +941,6 @@ abstract contract EIP712 {
         }
     }
 }
-
-
-pragma solidity ^0.7.6;
 
 /**
  * @dev Simplified copy of OpenZeppelin ECDSA library downgraded to 0.7.6
@@ -1103,9 +1062,6 @@ library ECDSA {
     }
 }
 
-
-pragma solidity ^0.7.6;
-
 /**
  * @dev Interface of the ERC1271 standard signature validation method for
  * contracts as defined in https://eips.ethereum.org/EIPS/eip-1271[ERC-1271].
@@ -1119,24 +1075,13 @@ interface IERC1271 {
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue);
 }
 
-
-pragma solidity ^0.7.6;
-
 /// @title Interface for WETH tokens
 interface IWETH is IERC20 {
     function deposit() external payable;
     function withdraw(uint256 amount) external;
 }
 
-
-pragma solidity ^0.7.6;
 pragma abicoder v2;
-
-
-
-
-
-
 
 contract LimitOrderProtocolRFQ is EthReceiver, EIP712("1inch RFQ", "2"), Permitable {
     using SafeMath for uint256;
@@ -1317,11 +1262,6 @@ contract LimitOrderProtocolRFQ is EthReceiver, EIP712("1inch RFQ", "2"), Permita
         invalidatorStorage[invalidatorSlot] = invalidator | invalidatorBit;
     }
 }
-
-
-pragma solidity ^0.7.6;
-
-
 
 contract UnoswapRouter is EthReceiver, Permitable {
     uint256 private constant _TRANSFER_FROM_CALL_SELECTOR_32 = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
@@ -1517,10 +1457,6 @@ contract UnoswapRouter is EthReceiver, Permitable {
         }
     }
 }
-
-
-pragma solidity ^0.7.0;
-
 
 /**
  * @dev Wrappers over Solidity's uintXX/intXX casting operators with added overflow
@@ -1729,8 +1665,6 @@ library SafeCast {
     }
 }
 
-pragma solidity ^0.7.6;
-
 interface IUniswapV3Pool {
     /// @notice Swap token0 for token1, or token1 for token0
     /// @dev The caller of this method receives a callback in the form of IUniswapV3SwapCallback#uniswapV3SwapCallback
@@ -1763,9 +1697,6 @@ interface IUniswapV3Pool {
     function fee() external view returns (uint24);
 }
 
-
-pragma solidity ^0.7.6;
-
 /// @title Callback for IUniswapV3PoolActions#swap
 /// @notice Any contract that calls IUniswapV3PoolActions#swap must implement this interface
 interface IUniswapV3SwapCallback {
@@ -1784,17 +1715,6 @@ interface IUniswapV3SwapCallback {
         bytes calldata data
     ) external;
 }
-
-
-pragma solidity ^0.7.6;
-
-
-
-
-
-
-
-
 
 contract UnoswapV3Router is EthReceiver, Permitable, IUniswapV3SwapCallback {
     using Address for address payable;
@@ -1996,9 +1916,6 @@ contract UnoswapV3Router is EthReceiver, Permitable, IUniswapV3SwapCallback {
     }
 }
 
-
-pragma solidity ^0.7.6;
-
 /// @title Clipper interface subset used in swaps
 interface IClipperExchangeInterface {
     function sellTokenForToken(IERC20 inputToken, IERC20 outputToken, address recipient, uint256 minBuyAmount, bytes calldata auxiliaryData) external returns (uint256 boughtAmount);
@@ -2006,14 +1923,6 @@ interface IClipperExchangeInterface {
     function sellTokenForEth(IERC20 inputToken, address payable recipient, uint256 minBuyAmount, bytes calldata auxiliaryData) external returns (uint256 boughtAmount);
     function theExchange() external returns (address payable);
 }
-
-
-pragma solidity ^0.7.6;
-
-
-
-
-
 
 /// @title Clipper router that allows to use `ClipperExchangeInterface` for swaps
 contract ClipperRouter is EthReceiver, Permitable {
@@ -2114,12 +2023,7 @@ contract ClipperRouter is EthReceiver, Permitable {
     }
 }
 
-
-pragma solidity ^0.7.6;
-
-
-
-contract AggregationRouterV4 is Ownable, EthReceiver, Permitable, UnoswapRouter, UnoswapV3Router, LimitOrderProtocolRFQ, ClipperRouter {
+contract AggregationRouter is Ownable, EthReceiver, Permitable, UnoswapRouter, UnoswapV3Router, LimitOrderProtocolRFQ, ClipperRouter {
     using SafeMath for uint256;
     using UniERC20 for IERC20;
     using SafeERC20 for IERC20;
